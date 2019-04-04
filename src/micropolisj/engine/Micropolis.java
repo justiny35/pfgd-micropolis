@@ -120,6 +120,7 @@ public class Micropolis
 	int churchCount;
 	int policeCount;
 	int fireStationCount;
+	int new_buildingCount;
 	int stadiumCount;
 	int coalCount;
 	int nuclearCount;
@@ -135,6 +136,7 @@ public class Micropolis
 	int lastTotalPop;
 	int lastFireStationCount;
 	int lastPoliceCount;
+	int lastnew_buildingCount;
 
 	int trafficMaxLocationX;
 	int trafficMaxLocationY;
@@ -172,11 +174,13 @@ public class Micropolis
 	public double roadPercent = 1.0;
 	public double policePercent = 1.0;
 	public double firePercent = 1.0;
+	public double new_buildingPercent = 1.0;
 
 	int taxEffect = 7;
 	int roadEffect = 32;
 	int policeEffect = 1000;
 	int fireEffect = 1000;
+	int new_buildingEffect = 5000;
 
 	int cashFlow; //net change in totalFunds in previous year
 
@@ -533,6 +537,7 @@ public class Micropolis
 		churchCount = 0;
 		policeCount = 0;
 		fireStationCount = 0;
+		new_buildingCount = 0;
 		stadiumCount = 0;
 		coalCount = 0;
 		nuclearCount = 0;
@@ -1731,6 +1736,7 @@ public class Micropolis
 		lastTotalPop = totalPop;
 		lastFireStationCount = fireStationCount;
 		lastPoliceCount = policeCount;
+		lastnew_buildingCount = new_buildingCount;
 
 		BudgetNumbers b = generateBudget();
 
@@ -1787,6 +1793,9 @@ public class Micropolis
 
 	/** Annual maintenance cost of each fire station. */
 	static final int FIRE_STATION_MAINTENANCE = 100;
+	
+	/** Annual maintenance cost of the shield generator */
+	static final int NEW_BUILDING_MAINTENANCE = 1000;
 
 	/**
 	 * Calculate the current budget numbers.
@@ -1798,6 +1807,7 @@ public class Micropolis
 		b.roadPercent = Math.max(0.0, roadPercent);
 		b.firePercent = Math.max(0.0, firePercent);
 		b.policePercent = Math.max(0.0, policePercent);
+		b.new_buildingPercent = (int) Math.max(0.0, new_buildingPercent);
 
 		b.previousBalance = budget.totalFunds;
 		b.taxIncome = (int)Math.round(lastTotalPop * landValueAverage / 120 * b.taxRate * FLevels[gameLevel]);
@@ -1806,10 +1816,12 @@ public class Micropolis
 		b.roadRequest = (int)Math.round((lastRoadTotal + lastRailTotal * 2) * RLevels[gameLevel]);
 		b.fireRequest = FIRE_STATION_MAINTENANCE * lastFireStationCount;
 		b.policeRequest = POLICE_STATION_MAINTENANCE * lastPoliceCount;
+		b.new_buildingRequest = NEW_BUILDING_MAINTENANCE * lastnew_buildingCount;
 
 		b.roadFunded = (int)Math.round(b.roadRequest * b.roadPercent);
 		b.fireFunded = (int)Math.round(b.fireRequest * b.firePercent);
 		b.policeFunded = (int)Math.round(b.policeRequest * b.policePercent);
+		b.new_buildingFunded = (int)Math.round(b.new_buildingRequest * b.new_buildingPercent);
 
 		int yumDuckets = budget.totalFunds + b.taxIncome;
 		assert yumDuckets >= 0;
