@@ -178,7 +178,11 @@ public class MonsterSprite extends Sprite
 				s.explodeSprite();
 			}
 		}
-
-		destroyTile(x / 16, y / 16);
+		
+		//Maximum shield strength is 1000, so monster will destroy tiles that are not covered by shield (less than 0)
+		if (city.getShieldCoverage(x/16, y/16) <= 0)
+		{
+			destroyTile(x / 16, y / 16);
+		}
 	}
 }

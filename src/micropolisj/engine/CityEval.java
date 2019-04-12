@@ -96,6 +96,7 @@ public class CityEval
 		z += engine.railTotal * 10;
 		z += engine.policeCount * 1000;
 		z += engine.fireStationCount * 1000;
+		z += engine.new_buildingCount * 1000;
 		z += engine.hospitalCount * 400;
 		z += engine.stadiumCount * 3000;
 		z += engine.seaportCount * 5000;
@@ -237,6 +238,7 @@ public class CityEval
 		if (engine.roadEffect < 32) { z -= (32 - engine.roadEffect); }
 		if (engine.policeEffect < 1000) { z *= (0.9 + (engine.policeEffect / 10000.1)); }
 		if (engine.fireEffect < 1000) { z *= (0.9 + (engine.fireEffect / 10000.1)); }
+		if (engine.new_buildingEffect < 1000) { z *= (0.9 + (engine.new_buildingEffect / 1000.1));}
 		if (engine.resValve < -1000) { z *= 0.85; }
 		if (engine.comValve < -1000) { z *= 0.85; }
 		if (engine.indValve < -1000) { z *= 0.85; }

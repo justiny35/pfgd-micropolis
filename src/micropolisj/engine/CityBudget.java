@@ -38,6 +38,9 @@ public class CityBudget
 	 */
 	int policeFundEscrow;
 	
+	/**
+	 * Amount of prepaid shield generator maintenance (in 1/TAXFREQ's).
+	 */
 	int new_buildingFundEscrow;
 
 	CityBudget(Micropolis city)

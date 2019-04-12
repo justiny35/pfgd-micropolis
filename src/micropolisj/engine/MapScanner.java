@@ -214,9 +214,25 @@ class MapScanner extends TileBehavior
 	{
 		//Very basic building functionality. Checks for power and does "repair"
 		boolean powerOn = checkZonePower();
+		city.new_buildingCount++;
 		if ((city.cityTime % 8) == 0) {
 			repairZone(NEW_BUILDING, 3);
 		}
+		
+		int z;
+		if (powerOn) {
+			z = city.new_buildingEffect; //if powered, get effect
+		} else {
+			z = city.new_buildingEffect/2; // from the funding ratio
+		}
+		
+		traffic.mapX = xpos;
+		traffic.mapY = ypos;
+		if (!traffic.findPerimeterRoad()) {
+			z /= 2;
+		}
+		
+		city.new_buildingMap[ypos/8][xpos/8] += z;
 	}
 
 	void doFireStation()

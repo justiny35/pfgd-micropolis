@@ -86,6 +86,8 @@ public class Micropolis
 	public int [][] fireRate;       //firestations reach- used for overlay graphs
 	int [][] policeMap;      //police stations- cleared and rebuilt each sim cycle
 	public int [][] policeMapEffect;//police stations reach- used for overlay graphs
+	int [][] new_buildingMap; //shield- cleared and rebuilt each sim cycle
+	public int [][] new_buildingMapEffect; //shield reach- used for overlay graphs
 
 	/** For each 8x8 section of city, this is an integer between 0 and 64,
 	 * with higher numbers being closer to the center of the city. */
@@ -180,7 +182,7 @@ public class Micropolis
 	int roadEffect = 32;
 	int policeEffect = 1000;
 	int fireEffect = 1000;
-	int new_buildingEffect = 5000;
+	int new_buildingEffect = 1000;
 
 	int cashFlow; //net change in totalFunds in previous year
 
@@ -248,6 +250,8 @@ public class Micropolis
 		fireStMap = new int[smY][smX];
 		policeMap = new int[smY][smX];
 		policeMapEffect = new int[smY][smX];
+		new_buildingMap = new int[smY][smX];
+		new_buildingMapEffect = new int[smY][smX];
 		fireRate = new int[smY][smX];
 		comRate = new int[smY][smX];
 
@@ -549,6 +553,7 @@ public class Micropolis
 			for (int x = 0; x < fireStMap[y].length; x++) {
 				fireStMap[y][x] = 0;
 				policeMap[y][x] = 0;
+				new_buildingMap[y][x] = 0;
 			}
 		}
 	}
@@ -645,6 +650,7 @@ public class Micropolis
 
 		case 13:
 			crimeScan();
+			shieldScan();
 			break;
 
 		case 14:
@@ -885,6 +891,21 @@ public class Micropolis
 
 		fireMapOverlayDataChanged(MapState.POLICE_OVERLAY);
 	}
+	
+	void shieldScan()
+	{
+		new_buildingMap = smoothFirePoliceMap(new_buildingMap);
+		new_buildingMap = smoothFirePoliceMap(new_buildingMap);
+		new_buildingMap = smoothFirePoliceMap(new_buildingMap);
+		
+		for (int sy = 0; sy < new_buildingMap.length; sy++) {
+			for (int sx = 0; sx < new_buildingMap[sy].length; sx++) {
+				new_buildingMapEffect[sy][sx] = new_buildingMap[sy][sx];
+			}
+		}
+		fireMapOverlayDataChanged(MapState.NEW_BUILDING_OVERLAY);
+		
+	}
 
 	void doDisasters()
 	{
@@ -1110,6 +1131,12 @@ public class Micropolis
 		}
 
 		trfDensity[mapY/2][mapX/2] = z;
+	}
+	
+	/** Accessor method for new_buildingMapEffect. */
+	public int getShieldCoverage(int xpos, int ypos)
+	{ 
+		return new_buildingMapEffect[ypos/8][xpos/8];
 	}
 
 	/** Accessor method for fireRate[]. */
@@ -1737,6 +1764,7 @@ public class Micropolis
 		lastFireStationCount = fireStationCount;
 		lastPoliceCount = policeCount;
 		lastnew_buildingCount = new_buildingCount;
+		//lastnew_buildingCount = 2;
 
 		BudgetNumbers b = generateBudget();
 
@@ -1744,6 +1772,7 @@ public class Micropolis
 		budget.roadFundEscrow -= b.roadFunded;
 		budget.fireFundEscrow -= b.fireFunded;
 		budget.policeFundEscrow -= b.policeFunded;
+		budget.new_buildingFundEscrow -= b.new_buildingFunded;
 
 		taxEffect = b.taxRate;
 		roadEffect = b.roadRequest != 0 ?
@@ -1754,6 +1783,9 @@ public class Micropolis
 			1000;
 		fireEffect = b.fireRequest != 0 ?
 			(int)Math.floor(1000.0 * (double)b.fireFunded / (double)b.fireRequest) :
+			1000;
+		new_buildingEffect = b.new_buildingRequest != 0 ?
+			(int)Math.floor(1000.0 * (double)b.new_buildingFunded / (double)b.new_buildingRequest) :
 			1000;
 	}
 
@@ -1769,7 +1801,7 @@ public class Micropolis
 	void collectTax()
 	{
 		int revenue = budget.taxFund / TAXFREQ;
-		int expenses = -(budget.roadFundEscrow + budget.fireFundEscrow + budget.policeFundEscrow) / TAXFREQ;
+		int expenses = -(budget.roadFundEscrow + budget.fireFundEscrow + budget.policeFundEscrow + budget.new_buildingFundEscrow) / TAXFREQ;
 
 		FinancialHistory hist = new FinancialHistory();
 		hist.cityTime = cityTime;
@@ -1786,6 +1818,7 @@ public class Micropolis
 		budget.roadFundEscrow = 0;
 		budget.fireFundEscrow = 0;
 		budget.policeFundEscrow = 0;
+		budget.new_buildingFundEscrow = 0;
 	}
 
 	/** Annual maintenance cost of each police station. */
@@ -1795,7 +1828,7 @@ public class Micropolis
 	static final int FIRE_STATION_MAINTENANCE = 100;
 	
 	/** Annual maintenance cost of the shield generator */
-	static final int NEW_BUILDING_MAINTENANCE = 1000;
+	static final int NEW_BUILDING_MAINTENANCE = 200;
 
 	/**
 	 * Calculate the current budget numbers.
@@ -1835,6 +1868,18 @@ public class Micropolis
 				if (yumDuckets >= b.policeFunded)
 				{
 					yumDuckets -= b.policeFunded;
+					if (yumDuckets >= b.new_buildingFunded)
+					{
+						yumDuckets -= b.new_buildingFunded;
+					}
+					else
+					{
+						assert b.new_buildingRequest != 0;
+						
+						b.new_buildingFunded = yumDuckets;
+						b.new_buildingPercent = (double)b.new_buildingFunded / (double)b.new_buildingRequest;
+						yumDuckets = 0;
+					}
 				}
 				else
 				{
@@ -1842,6 +1887,8 @@ public class Micropolis
 
 					b.policeFunded = yumDuckets;
 					b.policePercent = (double)b.policeFunded / (double)b.policeRequest;
+					b.new_buildingFunded = 0;
+					b.new_buildingPercent = 0.0;
 					yumDuckets = 0;
 				}
 			}
@@ -1853,6 +1900,8 @@ public class Micropolis
 				b.firePercent = (double)b.fireFunded / (double)b.fireRequest;
 				b.policeFunded = 0;
 				b.policePercent = 0.0;
+				b.new_buildingFunded = 0;
+				b.new_buildingPercent = 0.0;
 				yumDuckets = 0;
 			}
 		}
@@ -1866,9 +1915,11 @@ public class Micropolis
 			b.firePercent = 0.0;
 			b.policeFunded = 0;
 			b.policePercent = 0.0;
+			b.new_buildingFunded = 0;
+			b.new_buildingPercent = 0.0;
 		}
 
-		b.operatingExpenses = b.roadFunded + b.fireFunded + b.policeFunded;
+		b.operatingExpenses = b.roadFunded + b.fireFunded + b.policeFunded + b.new_buildingFunded;
 		b.newBalance = b.previousBalance + b.taxIncome - b.operatingExpenses;
 
 		return b;
@@ -1981,6 +2032,8 @@ public class Micropolis
 		firePercent = (double)n / 65536.0;
 		n = dis.readInt();                     //62,63... road percent
 		roadPercent = (double)n / 65536.0;
+		n = dis.readInt();
+		new_buildingPercent = (double)n / 65536.0;
 
 		for (int i = 64; i < 120; i++)
 		{
@@ -2039,6 +2092,7 @@ public class Micropolis
 		out.writeInt((int)(policePercent * 65536));
 		out.writeInt((int)(firePercent * 65536));
 		out.writeInt((int)(roadPercent * 65536));
+		out.writeInt((int)(new_buildingPercent * 65536));
 
 		//64
 		for (int i = 64; i < 120; i++) {
@@ -2260,8 +2314,9 @@ public class Micropolis
 			int x = PRNG.nextInt(getWidth());
 			int y = PRNG.nextInt(getHeight());
 			assert testBounds(x, y);
-
-			if (isVulnerable(getTile(x, y))) {
+			
+			// If there is no shield coverage on tile, it means it is vulnerable to earthquake damage
+			if (getShieldCoverage(x/16, y/16) <= 0) {
 				if (PRNG.nextInt(4) != 0) {
 					setTile(x, y, (char)(RUBBLE + PRNG.nextInt(4)));
 				} else {

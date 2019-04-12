@@ -34,5 +34,5 @@ public class BudgetNumbers
 	
 	public int new_buildingRequest;
 	public int new_buildingFunded;
-	public int new_buildingPercent;
+	public double new_buildingPercent;
 }

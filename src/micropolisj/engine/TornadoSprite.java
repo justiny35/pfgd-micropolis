@@ -83,7 +83,11 @@ public class TornadoSprite extends Sprite
 			this.frame = 0;
 			return;
 		}
-
-		destroyTile(x/16, y/16);
+		
+		//Maximum shield strength is 1000, so tornado will destroy tiles that are not covered by shield
+		if (city.getShieldCoverage(x/16, y/16) <= 0)
+		{
+			destroyTile(x / 16, y / 16);
+		}
 	}
 }
